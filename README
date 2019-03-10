@@ -1,0 +1,73 @@
+CERINTA
+
+Se cere implementarea protocolului KERMIT, in format redus (MINI-KERMIT), pentru transfer de fisiere,
+folosind coduri ciclice CRC pentru detectia erorilor. Pentru simularea mediului de comunicatie se va folosi
+aplicatia link emulator.
+
+DESCRIERE GENERALA 
+
+Protocolul KERMIT este un protocol ce face parte din clasa protocoalelor ARQ (Automatic Repeat Request),
+in care un pachet eronat sau neconfirmat este automat retransmis. Datele utile sunt impachetate, fiind
+inconjurate cu unele campuri de control. In timpul transmiterii unui pachet nu se face controlul fluxului.
+Fiecare pachet trebuie confirmat.
+
+
+IMPLEMENTARE 
+
+Voi detalia cele doua fisiere, ksender.c si kreceiver.c pe rand, in cele ce urmeaza. 
+
+==================
+Fisierul ksender.c
+==================
+
+Am folosit o structura cu 7 campuri pentru a implementa un pachet de tip MINI-KERMIT,
+folosind __attribute__ ((__packed__)) pentru alinierea datelor in memorie.
+
+Functiile auxiliare create:
+	- o functie folosita pentru a trimite un pachet si pentru a astepta raspunsul la acest pachet. In caz ca raspunsul este NULL de 3 ori la rand, se va inchide transmisiunea.
+	- 3 functii folosite pentru a copia datele dintr-o structura de tip package in payload in functie de tipul pachetului. In implementarea lor s-a folosit functia memcpy.
+	- 4 functii folosite pentru a crea si initializa mai multe pachete in functie de tipul lor
+	- 2 functii folosite pentru a recalcula CRC-ul unui pachet in cazul in care trebuie incrementat numarul de secventa din cadrul pachetului
+
+Structura principala a main-ului este urmatoarea:
+	- creare si trimitere pachet Send-Init
+	- o bucla for folosita pentru a parcurge fiecare fisier din cele primite ca argumente:
+		- trimiterea unui File-Header
+		- deschiderea fisierului de input si citirea datelor de cate 250 de octeti din acesta si creare de pachete de tip 'D' pana se ajunge la finalul fisierului
+		- trimiterea de EOF dupa ce toate datele au fost trimise
+	- trimiterea pachetului de tip EOT dupa ce au fost epuizate toate fisierele
+	- daca se primeste ACK pentru EOT, se inchide transmisiunea
+
+Fiecare operatiune de trimitere este facuta folosind acea functie auxiliara mentionata anterior.
+Dupa fiecare trimitere se verifica tipul pachetului returnat de catre receiver. Cat timp acesta este de tip NACK, se va reincerca trimiterea aceluiasi pachet trimis anterior dar cu numarul de secventa incrementat. Fiecare numar de secventa este modulo 64.
+
+====================
+Fisierul kreceiver.c
+====================
+
+Am folosit o structura cu 7 campuri pentru a implementa un pachet de tip MINI-KERMIT,
+folosind __attribute__ ((__packed__)) pentru alinierea datelor in memorie.
+
+Functiile auxiliare create:
+	- 3 functii folosite pentru a copia datele dintr-o structura de tip package in payload in functie de tipul pachetului. In implementarea lor s-a folosit functia memcpy.
+	- 3 functii folosite pentru a crea si initializa mai multe pachete in functie de tipul lor
+	- 2 functii folosite pentru a verifica daca pachetul primit are acelasi CRC cu cel din campul sau CHECK
+
+Structura principala a main-ului este urmatoarea:
+	- initializarea a doua pachete de tip NACK, respectiv ACK
+	- se asteapta primirea pachetului de tip Send-Init de inca 2 ori TIME, iar in cazul in care nu s-a primit, se va termina conexiunea
+	- se asteapta primirea primului pachet de tip File-Header, iar in cazul in care nu s-a primit se va termina conexiunea
+	- o bucla while folosita pentru a primi toate datele necesare construirii fisierelor de output(pana cand se primeste pachetul EOT):
+		- primirea unui File-Header si crearea fisierului de output cu prefixul "recv_"
+		- o bucla while folosita pentru a scrie datele din toate pachetele de tip 'D' in fisierul de output (cat timp pachetul curent este diferit de EOF)
+		- primirea de EOF dupa ce toate datele au fost prelucrate
+	- verificarea corectitudinii pachetului EOT primit si trimiterea ACK-ului sau NACK-ului pentru acesta
+	
+Dupa fiecare pachet primit se verifica CRC-ul sau iar in caz ca este gresit, se va trimite NACK pana cand pachetul primit va fi cel corect, fara biti eronati. 
+Fiecare asteptare de pachet se face de maximum de 3 ori, iar in caz ca mesajul primit este tot NULL, se va termina transmisiunea.
+
+CONCLUZII
+
+Consider ca a fost o tema din care chiar am avut multe de invatat, o tema care m-a
+ajutat sa inteleg mai bine cum functioneaza un protocol de tip ARQ si, de asemenea, a
+fost un nou tip de provocare pentru mine.
