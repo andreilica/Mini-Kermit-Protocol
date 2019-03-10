@@ -65,9 +65,3 @@ Structura principala a main-ului este urmatoarea:
 	
 Dupa fiecare pachet primit se verifica CRC-ul sau iar in caz ca este gresit, se va trimite NACK pana cand pachetul primit va fi cel corect, fara biti eronati. 
 Fiecare asteptare de pachet se face de maximum de 3 ori, iar in caz ca mesajul primit este tot NULL, se va termina transmisiunea.
-
-CONCLUZII
-
-Consider ca a fost o tema din care chiar am avut multe de invatat, o tema care m-a
-ajutat sa inteleg mai bine cum functioneaza un protocol de tip ARQ si, de asemenea, a
-fost un nou tip de provocare pentru mine.
